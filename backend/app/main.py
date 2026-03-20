@@ -2,6 +2,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.api.v1 import tasks as tasks_router
+from app.api.v1 import reports as reports_router
+from app.api.v1 import results as results_router
 
 app = FastAPI(title="竞赛材料查重与创新评估系统", version="0.1.0")
 
@@ -26,6 +28,8 @@ async def limit_upload_size(request: Request, call_next):
 
 
 app.include_router(tasks_router.router, prefix="/api/v1/tasks", tags=["tasks"])
+app.include_router(reports_router.router, prefix="/api/v1/reports", tags=["reports"])
+app.include_router(results_router.router, prefix="/api/v1/tasks", tags=["results"])
 
 
 @app.get("/health")
