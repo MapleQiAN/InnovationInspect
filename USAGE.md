@@ -92,7 +92,10 @@ cp .env.example .env
 编辑 `.env` 文件，关键配置项:
 
 ```env
-# Anthropic API (必需，用于 LLM 分析)
+# LLM 配置 (必需，用于 AI 分析)
+# 支持任意提供商，格式: <provider>/<model>
+# 常见配置见下一小节
+LLM_MODEL=anthropic/claude-sonnet-4-6
 ANTHROPIC_API_KEY=your_api_key_here
 
 # 数据库
@@ -111,6 +114,39 @@ REDIS_URL=redis://redis:6379/0
 
 # Frontend API 地址
 NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+```
+
+##### LLM 提供商配置说明
+
+系统支持多个 AI 提供商。通过 `LLM_MODEL` 环境变量指定，格式为 `<provider>/<model>`：
+
+| 提供商 | 配置 | 所需 Key | 说明 |
+|--------|------|---------|------|
+| **Anthropic** | `anthropic/claude-opus-4-6` | `ANTHROPIC_API_KEY` | 推荐，性能最优 |
+| **Anthropic** | `anthropic/claude-sonnet-4-6` | `ANTHROPIC_API_KEY` | 成本较低 |
+| **OpenAI** | `openai/gpt-4o` | `OPENAI_API_KEY` | 通用选择 |
+| **OpenAI** | `openai/gpt-4-turbo` | `OPENAI_API_KEY` | 更快响应 |
+| **Google** | `gemini/gemini-1.5-pro` | `GEMINI_API_KEY` | 长上下文 |
+| **Mistral** | `mistral/mistral-large-latest` | `MISTRAL_API_KEY` | 开源友好 |
+| **DeepSeek** | `deepseek/deepseek-chat` | `DEEPSEEK_API_KEY` | 国产方案 |
+| **Azure OpenAI** | `azure/your-deployment` | `AZURE_API_KEY` + `AZURE_API_BASE` | 企业部署 |
+
+**完整提供商列表**: 见 [litellm 文档](https://docs.litellm.ai/docs/providers)
+
+**配置示例**:
+
+```bash
+# 使用 Claude Opus
+export LLM_MODEL=anthropic/claude-opus-4-6
+export ANTHROPIC_API_KEY=sk-ant-xxxxx
+
+# 或使用 GPT-4
+export LLM_MODEL=openai/gpt-4o
+export OPENAI_API_KEY=sk-xxxxx
+
+# 或使用 Gemini
+export LLM_MODEL=gemini/gemini-1.5-pro
+export GEMINI_API_KEY=xxxxx
 ```
 
 #### 2. 启动所有服务
@@ -143,6 +179,40 @@ docker-compose exec backend alembic upgrade head
 ---
 
 ### 方案 B: 本地开发环境
+
+#### 0. 配置本地环境变量
+
+在 `backend` 目录下创建 `.env` 文件：
+
+```env
+# LLM 配置
+LLM_MODEL=anthropic/claude-sonnet-4-6
+ANTHROPIC_API_KEY=your_api_key_here
+
+# 数据库 (本地 PostgreSQL)
+DATABASE_URL=postgresql://ccreview:ccreview@localhost:5432/ccreview
+
+# MinIO (本地或使用 Docker)
+MINIO_URL=http://localhost:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+
+# Qdrant (本地或使用 Docker)
+QDRANT_URL=http://localhost:6333
+
+# Redis (本地或使用 Docker)
+REDIS_URL=redis://localhost:6379/0
+```
+
+**快速启动依赖服务 (Docker)**:
+
+```bash
+# 只启动必要的服务 (数据库、缓存、向量库)
+docker run -d --name postgres -e POSTGRES_PASSWORD=ccreview -p 5432:5432 postgres:15
+docker run -d --name redis -p 6379:6379 redis:7
+docker run -d --name qdrant -p 6333:6333 qdrant/qdrant
+docker run -d --name minio -p 9000:9000 -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin minio/minio:latest server /data
+```
 
 #### 后端部分
 
@@ -868,17 +938,52 @@ Response (200):
 
 ## 常见问题
 
-### Q1: 分析失败，显示 "Anthropic API Key 无效"
+### Q1: 分析失败，显示 "LLM API 调用失败"
 
 **A**:
-1. 检查 `.env` 中 `ANTHROPIC_API_KEY` 是否配置
-2. 确保 API Key 有效且未过期
-3. 检查网络是否能访问 `api.anthropic.com`
+1. 检查 `.env` 中 `LLM_MODEL` 是否正确配置（格式: `<provider>/<model>`）
+2. 确保对应提供商的 API Key 已配置且有效
+3. 检查网络连接是否正常
+
+**常见配置错误**:
 
 ```bash
-# 验证 API Key
-curl -H "Authorization: Bearer YOUR_API_KEY" \
-  https://api.anthropic.com/v1/models
+# ❌ 错误: 漏配 API Key
+LLM_MODEL=openai/gpt-4o
+# OPENAI_API_KEY 未配置
+
+# ✓ 正确: 配置了 API Key
+LLM_MODEL=openai/gpt-4o
+OPENAI_API_KEY=sk-xxxxx
+
+# ❌ 错误: 格式不对
+LLM_MODEL=gpt-4o  # 缺少提供商前缀
+
+# ✓ 正确: 完整格式
+LLM_MODEL=openai/gpt-4o
+```
+
+**验证 LLM 连接**:
+
+```bash
+# 在 backend 目录下测试
+cd backend
+python -c "
+from app.services.llm_client import LLMClient
+client = LLMClient()
+# 如果没有错误，说明配置正确
+print('LLM 连接正常')
+"
+```
+
+**查看后端日志**:
+
+```bash
+# Docker 环境
+docker-compose logs backend | grep -i llm
+
+# 本地环境
+# 检查 FastAPI 启动输出中是否有 LLM 相关错误
 ```
 
 ---
@@ -1034,7 +1139,107 @@ curl http://localhost:9000/health  # MinIO
 
 ---
 
+### 问题: LLM 调用失败 (API Key 无效、超时等)
+
+**症状**: 分析任务失败，错误信息涉及 LLM provider
+
+```bash
+# 1. 检查环境变量配置
+docker-compose exec backend env | grep -E "LLM_MODEL|API_KEY"
+
+# 2. 验证 API Key 格式和内容
+# - 确保 Key 中没有多余空格
+# - 确保 Key 未过期
+# - 查看提供商官网是否有配额限制
+
+# 3. 查看详细错误日志
+docker-compose logs backend | grep -i "llm\|anthropic\|openai\|gemini"
+
+# 4. 测试 LLM 连接
+docker-compose exec backend python -c "
+import os
+from app.services.llm_client import LLMClient
+print(f'LLM_MODEL: {os.getenv(\"LLM_MODEL\")}')
+try:
+    client = LLMClient()
+    print('✓ LLM 客户端初始化成功')
+except Exception as e:
+    print(f'✗ LLM 客户端初始化失败: {e}')
+"
+
+# 5. 如果切换提供商，需要重启后端服务
+docker-compose restart backend
+```
+
+**常见原因及解决方案**:
+
+| 问题 | 症状 | 解决方案 |
+|------|------|--------|
+| API Key 无效 | 认证失败 | 检查 Key 有效期，重新生成 |
+| 配置格式错误 | 模型未找到 | 确保格式 `provider/model` 正确 |
+| 网络不通 | 超时或连接失败 | 检查网络和代理设置 |
+| API 限流 | 速率限制错误 | 等待或升级账户配额 |
+| 模型名称错误 | 模型不存在 | 参考 [litellm 文档](https://docs.litellm.ai/docs/providers) 验证模型名 |
+
+---
+
 ## 高级配置
+
+### 切换 LLM 提供商
+
+系统支持在运行时动态切换 LLM 提供商，无需重启。只需修改 `.env` 文件并重启后端服务：
+
+```bash
+# 1. 编辑 .env 文件
+# 修改 LLM_MODEL 和对应的 API_KEY
+
+# 例如：从 Anthropic 切换到 OpenAI
+# LLM_MODEL=anthropic/claude-sonnet-4-6
+# ANTHROPIC_API_KEY=sk-ant-xxxxx
+
+# 改为：
+# LLM_MODEL=openai/gpt-4o
+# OPENAI_API_KEY=sk-xxxxx
+
+# 2. 重启后端服务
+docker-compose restart backend
+
+# 或本地开发环境，需要重新启动 FastAPI
+# 停止当前进程 (Ctrl+C)
+# 重新运行: uvicorn app.main:app --reload --port 8000
+```
+
+**切换场景示例**:
+
+```bash
+# 场景 1: 使用 Claude Opus 获得最佳质量
+LLM_MODEL=anthropic/claude-opus-4-6
+ANTHROPIC_API_KEY=sk-ant-xxxxx
+
+# 场景 2: 使用 GPT-4o 对标 OpenAI 功能
+LLM_MODEL=openai/gpt-4o
+OPENAI_API_KEY=sk-xxxxx
+
+# 场景 3: 使用 Gemini 利用长上下文能力
+LLM_MODEL=gemini/gemini-1.5-pro
+GEMINI_API_KEY=xxxxx
+
+# 场景 4: 使用 DeepSeek (国内部署)
+LLM_MODEL=deepseek/deepseek-chat
+DEEPSEEK_API_KEY=xxxxx
+```
+
+**性能对比建议**:
+
+| 提供商 | 质量 | 速度 | 成本 | 适用场景 |
+|--------|------|------|------|---------|
+| Claude 3.5 Sonnet | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ | 推荐用于生产环境 |
+| Claude 3 Opus | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐ | 超高质量需求 |
+| GPT-4o | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ | OpenAI 用户 |
+| Gemini 1.5 Pro | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | 大文档处理 |
+| DeepSeek | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | 成本优化 |
+
+---
 
 ### 扩展 Worker 数量
 
@@ -1111,9 +1316,10 @@ async def create_task(
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| 0.1.1 | 2026-03-23 | 添加多提供商 LLM 配置指南、本地开发环境配置、LLM 故障排查 |
 | 0.1.0 | 2026-03-23 | 初始版本，完成核心功能和 UI |
 
 ---
 
-**最后更新**: 2026-03-23
+**最后更新**: 2026-03-23 (多提供商 LLM 支持)
 **维护团队**: CC-Review 开发组
