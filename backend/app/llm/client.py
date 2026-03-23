@@ -20,6 +20,7 @@ class LLMClient:
         key_map = {
             "anthropic_api_key": "ANTHROPIC_API_KEY",
             "openai_api_key": "OPENAI_API_KEY",
+            "openai_api_base": "OPENAI_API_BASE",
             "gemini_api_key": "GEMINI_API_KEY",
             "mistral_api_key": "MISTRAL_API_KEY",
             "deepseek_api_key": "DEEPSEEK_API_KEY",
@@ -63,6 +64,7 @@ def get_llm_client() -> LLMClient:
         api_keys={
             "anthropic_api_key": settings.anthropic_api_key,
             "openai_api_key": settings.openai_api_key,
+            "openai_api_base": settings.openai_api_base,
             "gemini_api_key": settings.gemini_api_key,
             "mistral_api_key": settings.mistral_api_key,
             "deepseek_api_key": settings.deepseek_api_key,

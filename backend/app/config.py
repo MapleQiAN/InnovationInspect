@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     # API Keys（按需填写对应提供商的 key）
     anthropic_api_key: str = ""
     openai_api_key: str = ""
+    openai_api_base: str = ""  # OpenAI 兼容 API 端点（如 https://api.deepseek.com/v1）
     gemini_api_key: str = ""
     mistral_api_key: str = ""
     deepseek_api_key: str = ""
