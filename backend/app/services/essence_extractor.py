@@ -1,5 +1,5 @@
 import json
-import anthropic
+from app.llm.client import LLMClient, get_llm_client
 from app.config import settings
 from app.models.essence import ProposalEssence
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,19 +39,14 @@ EXTRACTION_PROMPT = """
 
 
 class EssenceExtractor:
-    def __init__(self):
-        self.client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    def __init__(self, llm: LLMClient | None = None):
+        self.llm = llm or get_llm_client()
 
     async def _call_llm(self, text: str) -> dict:
-        message = self.client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=2048,
-            messages=[
-                {"role": "user", "content": EXTRACTION_PROMPT + text[:8000]}
-            ],
+        content = self.llm.chat(
+            messages=[{"role": "user", "content": EXTRACTION_PROMPT + text[:8000]}],
+            max_tokens=settings.llm_max_tokens,
         )
-        content = message.content[0].text
-        # Extract JSON block
         start = content.find("{")
         end = content.rfind("}") + 1
         if start == -1 or end == 0:

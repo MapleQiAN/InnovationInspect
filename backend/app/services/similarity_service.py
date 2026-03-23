@@ -1,5 +1,5 @@
 import json
-import anthropic
+from app.llm.client import LLMClient, get_llm_client
 from app.config import settings
 
 SIMILARITY_PROMPT = """
@@ -35,20 +35,18 @@ SCORE_KEYS = [
 
 
 class SimilarityService:
-    def __init__(self):
-        self.client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    def __init__(self, llm: LLMClient | None = None):
+        self.llm = llm or get_llm_client()
 
     async def _score_with_llm(self, essence: dict, candidate: dict) -> dict:
         prompt = SIMILARITY_PROMPT.format(
             essence=json.dumps(essence, ensure_ascii=False),
             candidate=json.dumps(candidate, ensure_ascii=False),
         )
-        msg = self.client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=1024,
+        content = self.llm.chat(
             messages=[{"role": "user", "content": prompt}],
+            max_tokens=1024,
         )
-        content = msg.content[0].text
         start = content.find("{")
         end = content.rfind("}") + 1
         if start == -1 or end == 0:

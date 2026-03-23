@@ -1,5 +1,5 @@
 import json
-import anthropic
+from app.llm.client import LLMClient, get_llm_client
 from app.config import settings
 from app.models.report import Report
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,8 +20,8 @@ REPORT_PROMPT = """
 
 
 class ReportService:
-    def __init__(self):
-        self.client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    def __init__(self, llm: LLMClient | None = None):
+        self.llm = llm or get_llm_client()
 
     async def generate(
         self,
@@ -36,12 +36,10 @@ class ReportService:
             similarity=json.dumps(sim_result, ensure_ascii=False)[:2000],
             innovation=json.dumps(innov_result, ensure_ascii=False)[:1000],
         )
-        msg = self.client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=1024,
+        summary = self.llm.chat(
             messages=[{"role": "user", "content": prompt}],
+            max_tokens=1024,
         )
-        summary = msg.content[0].text
         conclusion = innov_result.get("explanation", "")
 
         report = Report(

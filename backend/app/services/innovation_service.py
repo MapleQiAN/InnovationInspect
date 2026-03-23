@@ -1,5 +1,5 @@
 import json
-import anthropic
+from app.llm.client import LLMClient, get_llm_client
 from app.config import settings
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -42,20 +42,18 @@ INNOVATION_DIMS = [
 
 
 class InnovationService:
-    def __init__(self):
-        self.client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    def __init__(self, llm: LLMClient | None = None):
+        self.llm = llm or get_llm_client()
 
     async def _evaluate_with_llm(self, essence: dict, top_candidates: list[dict]) -> dict:
         prompt = INNOVATION_PROMPT.format(
             essence=json.dumps(essence, ensure_ascii=False),
             top_candidates=json.dumps(top_candidates[:3], ensure_ascii=False),
         )
-        msg = self.client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=1024,
+        content = self.llm.chat(
             messages=[{"role": "user", "content": prompt}],
+            max_tokens=1024,
         )
-        content = msg.content[0].text
         start = content.find("{")
         end = content.rfind("}") + 1
         if start == -1 or end == 0:

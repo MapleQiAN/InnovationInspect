@@ -1,5 +1,5 @@
 import json
-import anthropic
+from app.llm.client import LLMClient, get_llm_client
 from app.config import settings
 from app.storage.vector_store import VectorStore
 from app.models.candidate import Candidate
@@ -23,23 +23,22 @@ QUERY_GEN_PROMPT = """
 
 
 class RetrievalService:
-    def __init__(self):
-        self.llm = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    def __init__(self, llm: LLMClient | None = None):
+        self.llm = llm or get_llm_client()
         self.vector_store = VectorStore()
         self.web_search = WebSearchSkill()
 
     async def _call_llm_for_queries(self, essence: dict) -> list[str]:
-        msg = self.llm.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=512,
+        content = self.llm.chat(
             messages=[
                 {
                     "role": "user",
                     "content": QUERY_GEN_PROMPT + json.dumps(essence, ensure_ascii=False),
                 }
             ],
+            max_tokens=512,
         )
-        content = msg.content[0].text.strip()
+        content = content.strip()
         start = content.find("[")
         end = content.rfind("]") + 1
         if start == -1 or end == 0:
