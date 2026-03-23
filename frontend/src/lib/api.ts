@@ -66,3 +66,41 @@ export const addReviewComment = async (
 ): Promise<void> => {
   await api.post(`/reports/${reportId}/review`, { comment });
 };
+
+// ---- OpenClaw Skills ----
+
+export interface SkillMeta {
+  name: string;
+  description: string;
+  skill_type: "basic" | "core";
+  input_schema: Record<string, unknown>;
+}
+
+export interface SkillExecuteResponse {
+  skill_name: string;
+  success: boolean;
+  data: unknown;
+  error: string | null;
+  duration_ms: number;
+}
+
+export const listSkills = async (): Promise<SkillMeta[]> => {
+  const res = await api.get<SkillMeta[]>("/skills/");
+  return res.data;
+};
+
+export const getSkill = async (name: string): Promise<SkillMeta> => {
+  const res = await api.get<SkillMeta>(`/skills/${name}`);
+  return res.data;
+};
+
+export const executeSkill = async (
+  name: string,
+  inputs: Record<string, unknown>
+): Promise<SkillExecuteResponse> => {
+  const res = await api.post<SkillExecuteResponse>(
+    `/skills/${name}/execute`,
+    { inputs }
+  );
+  return res.data;
+};
