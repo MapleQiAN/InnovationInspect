@@ -18,7 +18,7 @@ from app.config import settings
 from app.database import Base
 from app.models import task, document, essence, candidate, report  # noqa: F401
 
-config.set_main_option("sqlalchemy.url", settings.database_url.replace("+asyncpg", ""))
+config.set_main_option("sqlalchemy.url", settings.database_url.replace("+asyncpg", "+psycopg"))
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
