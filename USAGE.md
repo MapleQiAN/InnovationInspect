@@ -130,6 +130,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 | **Mistral** | `mistral/mistral-large-latest` | `MISTRAL_API_KEY` | 开源友好 |
 | **DeepSeek** | `deepseek/deepseek-chat` | `DEEPSEEK_API_KEY` | 国产方案 |
 | **Azure OpenAI** | `azure/your-deployment` | `AZURE_API_KEY` + `AZURE_API_BASE` | 企业部署 |
+| **OpenAI 兼容** | `openai/<model-name>` | `OPENAI_API_KEY` + `OPENAI_API_BASE` | 任意兼容 API |
 
 **完整提供商列表**: 见 [litellm 文档](https://docs.litellm.ai/docs/providers)
 
@@ -147,6 +148,108 @@ export OPENAI_API_KEY=sk-xxxxx
 # 或使用 Gemini
 export LLM_MODEL=gemini/gemini-1.5-pro
 export GEMINI_API_KEY=xxxxx
+```
+
+##### 使用自定义 OpenAI 兼容 API
+
+系统支持任何兼容 OpenAI API 协议的服务，只需配置 `OPENAI_API_BASE` 即可。
+
+**支持的 OpenAI 兼容服务**:
+
+| 服务 | API Base | 模型示例 |
+|------|----------|---------|
+| **通义千问** | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-turbo`, `qwen-plus`, `qwen-max` |
+| **智谱 AI** | `https://open.bigmodel.cn/api/paas/v4` | `glm-4`, `glm-4-flash` |
+| **月之暗面** | `https://api.moonshot.cn/v1` | `moonshot-v1-8k`, `moonshot-v1-32k` |
+| **百川智能** | `https://api.baichuan-ai.com/v1` | `Baichuan2-Turbo`, `Baichuan2-53B` |
+| **零一万物** | `https://api.lingyiwanwu.com/v1` | `yi-large`, `yi-medium` |
+| **Ollama 本地** | `http://localhost:11434/v1` | `llama2`, `mistral`, `codellama` |
+| **vLLM 本地** | `http://localhost:8000/v1` | 自定义模型 |
+| **自定义服务** | 自定义端点 | 自定义模型名 |
+
+**配置步骤**:
+
+1. **编辑 `.env` 文件**:
+
+```env
+# 使用 OpenAI 兼容 API
+LLM_MODEL=openai/qwen-max
+OPENAI_API_KEY=your-api-key-here
+OPENAI_API_BASE=https://dashscope.aliyuncs.com/compatible-mode/v1
+```
+
+2. **配置说明**:
+   - `LLM_MODEL`: 使用 `openai/` 前缀，后面跟模型名称
+   - `OPENAI_API_KEY`: 对应服务的 API Key
+   - `OPENAI_API_BASE`: 服务的完整 API 端点 URL
+
+**常见 OpenAI 兼容服务配置示例**:
+
+```env
+# 通义千问 (阿里云)
+LLM_MODEL=openai/qwen-max
+OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxx
+OPENAI_API_BASE=https://dashscope.aliyuncs.com/compatible-mode/v1
+
+# 智谱 GLM-4
+LLM_MODEL=openai/glm-4
+OPENAI_API_KEY=xxxxxxxxxxxxxxxx
+OPENAI_API_BASE=https://open.bigmodel.cn/api/paas/v4
+
+# 月之暗面 Kimi
+LLM_MODEL=openai/moonshot-v1-32k
+OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxx
+OPENAI_API_BASE=https://api.moonshot.cn/v1
+
+# Ollama 本地模型
+LLM_MODEL=openai/llama2
+OPENAI_API_KEY=ollama  # Ollama 不需要真实 Key，任意值即可
+OPENAI_API_BASE=http://localhost:11434/v1
+
+# vLLM 本地部署
+LLM_MODEL=openai/my-custom-model
+OPENAI_API_KEY=empty
+OPENAI_API_BASE=http://localhost:8000/v1
+```
+
+**注意事项**:
+
+1. **模型名称**: `LLM_MODEL` 中的模型名称需要与目标服务支持的模型名称一致
+2. **API Key 格式**: 不同服务的 API Key 格式可能不同，请参考对应服务的文档
+3. **本地服务**: 使用 Ollama 或 vLLM 等本地服务时，`OPENAI_API_KEY` 可以填任意值（如 `ollama` 或 `empty`）
+4. **网络访问**: 确保 Docker 容器可以访问 `OPENAI_API_BASE` 指定的地址
+   - 本地服务（如 `localhost:11434`）在 Docker 中需要使用宿主机 IP（如 `http://host.docker.internal:11434/v1`）
+
+**Docker 环境访问本地服务**:
+
+如果使用 Docker Compose，需要修改 `OPENAI_API_BASE` 以访问宿主机上的本地服务：
+
+```env
+# Windows/Mac: 使用 host.docker.internal
+OPENAI_API_BASE=http://host.docker.internal:11434/v1
+
+# Linux: 需要添加 extra_hosts 配置到 docker-compose.yml
+# services:
+#   backend:
+#     extra_hosts:
+#       - "host.docker.internal:host-gateway"
+```
+
+**验证配置**:
+
+```bash
+# 测试 LLM 连接
+docker-compose exec backend python -c "
+from app.services.llm_client import LLMClient
+from app.config import settings
+print(f'LLM_MODEL: {settings.llm_model}')
+print(f'OPENAI_API_BASE: {settings.openai_api_base}')
+client = LLMClient(model=settings.llm_model, api_keys={
+    'openai_api_key': settings.openai_api_key,
+    'openai_api_base': settings.openai_api_base
+})
+print('✓ LLM 客户端初始化成功')
+"
 ```
 
 #### 2. 启动所有服务
@@ -1039,7 +1142,51 @@ docker-compose logs backend | grep -i llm
 
 ---
 
-### Q8: 分析一个文件需要多长时间？
+### Q8: 如何使用自定义 OpenAI 兼容 API？
+
+**A**:
+系统支持任何兼容 OpenAI API 协议的服务。配置方法：
+
+```env
+# 1. 设置 LLM_MODEL 为 openai/<模型名>
+LLM_MODEL=openai/qwen-max
+
+# 2. 设置 API Key
+OPENAI_API_KEY=your-api-key
+
+# 3. 设置 API Base URL
+OPENAI_API_BASE=https://dashscope.aliyuncs.com/compatible-mode/v1
+```
+
+**常见服务配置**:
+
+| 服务 | API Base | 模型示例 |
+|------|----------|---------|
+| 通义千问 | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-max` |
+| 智谱 AI | `https://open.bigmodel.cn/api/paas/v4` | `glm-4` |
+| 月之暗面 | `https://api.moonshot.cn/v1` | `moonshot-v1-32k` |
+| Ollama | `http://host.docker.internal:11434/v1` | `llama2` |
+
+**Docker 环境注意事项**:
+- 本地服务（如 Ollama）需要使用 `host.docker.internal` 代替 `localhost`
+- Linux 系统需在 `docker-compose.yml` 中添加 `extra_hosts` 配置
+
+**验证配置**:
+```bash
+docker-compose exec backend python -c "
+from app.services.llm_client import LLMClient
+from app.config import settings
+client = LLMClient(settings.llm_model, {
+    'openai_api_key': settings.openai_api_key,
+    'openai_api_base': settings.openai_api_base
+})
+print('✓ 配置成功')
+"
+```
+
+---
+
+### Q9: 分析一个文件需要多长时间？
 
 **A**:
 取决于文件大小和系统负载：
@@ -1180,6 +1327,49 @@ docker-compose restart backend
 | 网络不通 | 超时或连接失败 | 检查网络和代理设置 |
 | API 限流 | 速率限制错误 | 等待或升级账户配额 |
 | 模型名称错误 | 模型不存在 | 参考 [litellm 文档](https://docs.litellm.ai/docs/providers) 验证模型名 |
+| OpenAI 兼容 API 连接失败 | 连接被拒绝 | 检查 `OPENAI_API_BASE` 是否正确配置 |
+| Docker 无法访问本地服务 | 连接超时 | 使用 `host.docker.internal` 代替 `localhost` |
+
+**OpenAI 兼容 API 特定问题**:
+
+```bash
+# 测试 OpenAI 兼容 API 连接
+docker-compose exec backend python -c "
+import os
+from app.services.llm_client import LLMClient
+from app.config import settings
+
+print(f'LLM_MODEL: {settings.llm_model}')
+print(f'OPENAI_API_BASE: {settings.openai_api_base}')
+
+# 测试实际调用
+try:
+    client = LLMClient(settings.llm_model, {
+        'openai_api_key': settings.openai_api_key,
+        'openai_api_base': settings.openai_api_base
+    })
+    response = client.chat([{'role': 'user', 'content': '你好'}], max_tokens=10)
+    print(f'✓ API 调用成功: {response[:50]}...')
+except Exception as e:
+    print(f'✗ API 调用失败: {e}')
+"
+```
+
+**Docker 环境访问本地服务**:
+
+如果使用 Ollama、vLLM 等本地部署的模型服务，需要确保 Docker 容器可以访问宿主机：
+
+```env
+# Windows/Mac: 使用 host.docker.internal
+OPENAI_API_BASE=http://host.docker.internal:11434/v1
+
+# Linux: 需要修改 docker-compose.yml
+# services:
+#   backend:
+#     extra_hosts:
+#       - "host.docker.internal:host-gateway"
+# OPENAI_API_BASE=http://host.docker.internal:11434/v1
+```
 
 ---
 
@@ -1227,6 +1417,21 @@ GEMINI_API_KEY=xxxxx
 # 场景 4: 使用 DeepSeek (国内部署)
 LLM_MODEL=deepseek/deepseek-chat
 DEEPSEEK_API_KEY=xxxxx
+
+# 场景 5: 使用通义千问 (阿里云 OpenAI 兼容)
+LLM_MODEL=openai/qwen-max
+OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxx
+OPENAI_API_BASE=https://dashscope.aliyuncs.com/compatible-mode/v1
+
+# 场景 6: 使用智谱 GLM-4
+LLM_MODEL=openai/glm-4
+OPENAI_API_KEY=xxxxxxxxxxxxxxxx
+OPENAI_API_BASE=https://open.bigmodel.cn/api/paas/v4
+
+# 场景 7: 使用 Ollama 本地模型
+LLM_MODEL=openai/llama2
+OPENAI_API_KEY=ollama
+OPENAI_API_BASE=http://host.docker.internal:11434/v1
 ```
 
 **性能对比建议**:
@@ -1238,6 +1443,9 @@ DEEPSEEK_API_KEY=xxxxx
 | GPT-4o | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ | OpenAI 用户 |
 | Gemini 1.5 Pro | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | 大文档处理 |
 | DeepSeek | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | 成本优化 |
+| 通义千问 | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | 国内用户推荐 |
+| 智谱 GLM-4 | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | 中文场景优化 |
+| Ollama 本地 | ⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐⭐⭐ | 隐私/离线场景 |
 
 ---
 
@@ -1316,10 +1524,11 @@ async def create_task(
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| 0.1.2 | 2026-03-24 | 添加 OpenAI 兼容 API 配置指南，支持通义千问、智谱、Ollama 等服务 |
 | 0.1.1 | 2026-03-23 | 添加多提供商 LLM 配置指南、本地开发环境配置、LLM 故障排查 |
 | 0.1.0 | 2026-03-23 | 初始版本，完成核心功能和 UI |
 
 ---
 
-**最后更新**: 2026-03-23 (多提供商 LLM 支持)
+**最后更新**: 2026-03-24 (OpenAI 兼容 API 支持)
 **维护团队**: CC-Review 开发组
