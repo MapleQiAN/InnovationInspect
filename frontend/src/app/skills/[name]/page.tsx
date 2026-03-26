@@ -26,18 +26,35 @@ export default function SkillDetailPage() {
 
   if (fetchError)
     return (
-      <div className="max-w-3xl mx-auto px-6 py-10">
-        <Link href="/skills" className="text-sm text-blue-600 hover:underline">
-          &larr; 返回技能列表
+      <div className="max-w-3xl mx-auto px-6 py-10 animate-fade-in">
+        <Link href="/skills" className="inline-flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
+          返回技能列表
         </Link>
-        <p className="mt-4 text-red-500">{fetchError}</p>
+        <div className="mt-8 flex items-center gap-3 px-4 py-3.5 bg-red-50/80 rounded-xl border border-red-100">
+          <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+            <svg className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+          </div>
+          <p className="text-sm text-red-600 font-medium">{fetchError}</p>
+        </div>
       </div>
     );
 
   if (!skill)
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+      <div className="min-h-[calc(100vh-57px)] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative w-14 h-14">
+            <div className="absolute inset-0 rounded-full border-2 border-indigo-100" />
+            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-indigo-600 animate-spin" />
+            <div className="absolute inset-2 rounded-full border-2 border-transparent border-b-violet-400 animate-spin" style={{ animationDirection: "reverse", animationDuration: "1.5s" }} />
+          </div>
+          <p className="text-sm text-slate-400 font-medium">加载技能详情...</p>
+        </div>
       </div>
     );
 
@@ -80,51 +97,78 @@ export default function SkillDetailPage() {
 
   return (
     <main className="max-w-3xl mx-auto px-6 py-10">
-      <Link href="/skills" className="text-sm text-blue-600 hover:underline">
-        &larr; 返回技能列表
+      <Link href="/skills" className="inline-flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors animate-fade-in">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+        </svg>
+        返回技能列表
       </Link>
 
-      <div className="mt-4 mb-8">
+      <div className="mt-6 mb-8 animate-fade-in-up">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold font-mono text-gray-900">
-            {skill.name}
-          </h1>
-          <span
-            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-              skill.skill_type === "core"
-                ? "bg-purple-100 text-purple-700"
-                : "bg-blue-100 text-blue-700"
-            }`}
-          >
-            {skill.skill_type === "core" ? "核心能力" : "基础能力"}
-          </span>
+          <div className="section-icon bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-200/50">
+            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+            </svg>
+          </div>
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl font-bold font-mono text-slate-900 tracking-tight">
+                {skill.name}
+              </h1>
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                  skill.skill_type === "core"
+                    ? "bg-violet-50 text-violet-700 border border-violet-200/60"
+                    : "bg-blue-50 text-blue-700 border border-blue-200/60"
+                }`}
+              >
+                {skill.skill_type === "core" ? "核心能力" : "基础能力"}
+              </span>
+            </div>
+            <p className="mt-1 text-slate-500 text-sm">{skill.description}</p>
+          </div>
         </div>
-        <p className="mt-2 text-gray-500">{skill.description}</p>
       </div>
 
       {/* Input Form */}
-      <section className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
-        <h2 className="font-semibold text-gray-700 mb-4">执行参数</h2>
+      <section className="glass-card p-7 mb-6 animate-fade-in-up" style={{ animationDelay: "0.1s", animationFillMode: "both" }}>
+        <div className="flex items-center gap-3 mb-5">
+          <div className="section-icon bg-gradient-to-br from-slate-100 to-gray-100 border border-slate-200/50">
+            <svg className="w-4.5 h-4.5 text-slate-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+            </svg>
+          </div>
+          <h2 className="section-title">执行参数</h2>
+        </div>
         {propEntries.length === 0 ? (
-          <p className="text-sm text-gray-400">此技能无需输入参数</p>
+          <div className="text-center py-6 bg-slate-50/50 rounded-xl border border-slate-100/80">
+            <svg className="w-8 h-8 text-slate-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm text-slate-400">此技能无需输入参数</p>
+          </div>
         ) : (
           <div className="space-y-4">
             {propEntries.map(([key, prop]) => (
               <div key={key}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                   {key}
                   {required.includes(key) && (
-                    <span className="text-red-500 ml-1">*</span>
+                    <span className="text-red-400 ml-1">*</span>
                   )}
                 </label>
                 {prop?.description && (
-                  <p className="text-xs text-gray-400 mb-1">
+                  <p className="text-xs text-slate-400 mb-1.5">
                     {prop.description}
                   </p>
                 )}
                 <textarea
                   rows={2}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                  className="w-full border border-slate-200/80 rounded-xl px-4 py-2.5 text-sm font-mono
+                             focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 focus:outline-none
+                             bg-slate-50/50 hover:border-slate-300 transition-all duration-200
+                             placeholder:text-slate-400"
                   placeholder={
                     prop?.type === "integer" ? "数字" : "输入值..."
                   }
@@ -141,10 +185,13 @@ export default function SkillDetailPage() {
         <button
           onClick={handleExecute}
           disabled={loading}
-          className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          className="gradient-btn mt-6 flex items-center gap-2"
         >
           {loading && (
-            <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
           )}
           {loading ? "执行中..." : "执行 Skill"}
         </button>
@@ -152,18 +199,34 @@ export default function SkillDetailPage() {
 
       {/* Result */}
       {result && (
-        <section className="bg-white border border-gray-200 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-gray-700">执行结果</h2>
+        <section className="glass-card p-7 animate-scale-in">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <span className="text-xs text-gray-400">
+              <div className={`section-icon ${result.success
+                ? "bg-gradient-to-br from-emerald-100 to-teal-100 border border-emerald-200/50"
+                : "bg-gradient-to-br from-red-100 to-rose-100 border border-red-200/50"
+              }`}>
+                {result.success ? (
+                  <svg className="w-4.5 h-4.5 text-emerald-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                ) : (
+                  <svg className="w-4.5 h-4.5 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                  </svg>
+                )}
+              </div>
+              <h2 className="section-title">执行结果</h2>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
                 {result.duration_ms} ms
               </span>
               <span
-                className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                className={`text-xs px-2.5 py-1 rounded-lg font-semibold ${
                   result.success
-                    ? "bg-green-100 text-green-700"
-                    : "bg-red-100 text-red-700"
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                    : "bg-red-50 text-red-700 border border-red-200/60"
                 }`}
               >
                 {result.success ? "成功" : "失败"}
@@ -171,11 +234,14 @@ export default function SkillDetailPage() {
             </div>
           </div>
           {result.error && (
-            <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-              {result.error}
+            <div className="mb-4 flex items-start gap-3 p-3.5 bg-red-50/80 border border-red-100 rounded-xl">
+              <svg className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              </svg>
+              <p className="text-sm text-red-700 font-medium">{result.error}</p>
             </div>
           )}
-          <pre className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-xs overflow-auto max-h-80 text-gray-800">
+          <pre className="bg-slate-50/80 border border-slate-200/60 rounded-xl p-4 text-xs overflow-auto max-h-80 text-slate-700 font-mono leading-relaxed">
             {JSON.stringify(result.data, null, 2)}
           </pre>
         </section>
