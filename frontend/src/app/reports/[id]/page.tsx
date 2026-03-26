@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
-import ReactMarkdown from "react-markdown";
+import { marked } from "marked";
 import { getReport, addReviewComment, Report } from "@/lib/api";
 
 
@@ -63,6 +63,13 @@ export default function ReportPage() {
   const overallScore = report.innovation_result?.overall_innovation_score as number | undefined;
   const riskFlags = report.innovation_result?.risk_flags as string[] | undefined;
 
+  const summaryHtml = useMemo(() => report.summary ? marked.parse(report.summary, { async: false }) as string : "", [report.summary]);
+  const assessmentHtml = useMemo(() => {
+    const text = report.innovation_result?.assessment as string | undefined;
+    return text ? marked.parse(text, { async: false }) as string : "";
+  }, [report.innovation_result?.assessment]);
+  const conclusionHtml = useMemo(() => report.conclusion ? marked.parse(report.conclusion, { async: false }) as string : "", [report.conclusion]);
+
   return (
     <main className="max-w-3xl mx-auto px-6 py-10 space-y-6">
       {/* Header */}
@@ -117,9 +124,10 @@ export default function ReportPage() {
             </div>
             <h2 className="section-title">审核摘要</h2>
           </div>
-          <div className="text-sm text-slate-700 leading-relaxed bg-slate-50/50 rounded-xl p-4 border border-slate-100/80 prose prose-sm prose-slate max-w-none prose-headings:text-slate-800 prose-headings:font-semibold prose-p:text-slate-700 prose-strong:text-slate-800 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5">
-            <ReactMarkdown>{report.summary as string}</ReactMarkdown>
-          </div>
+          <div
+            className="text-sm text-slate-700 leading-relaxed bg-slate-50/50 rounded-xl p-4 border border-slate-100/80 prose prose-sm prose-slate max-w-none prose-headings:text-slate-800 prose-headings:font-semibold prose-p:text-slate-700 prose-strong:text-slate-800 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5"
+            dangerouslySetInnerHTML={{ __html: summaryHtml }}
+          />
         </div>
       )}
 
@@ -137,9 +145,10 @@ export default function ReportPage() {
               <p className="text-xs text-slate-400 mt-0.5">基于全文通读的深度分析</p>
             </div>
           </div>
-          <div className="text-sm text-slate-700 leading-relaxed bg-violet-50/30 rounded-xl p-4 border border-violet-100/60 prose prose-sm prose-slate max-w-none prose-headings:text-slate-800 prose-headings:font-semibold prose-p:text-slate-700 prose-strong:text-slate-800 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5">
-            <ReactMarkdown>{report.innovation_result.assessment as string}</ReactMarkdown>
-          </div>
+          <div
+            className="text-sm text-slate-700 leading-relaxed bg-violet-50/30 rounded-xl p-4 border border-violet-100/60 prose prose-sm prose-slate max-w-none prose-headings:text-slate-800 prose-headings:font-semibold prose-p:text-slate-700 prose-strong:text-slate-800 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5"
+            dangerouslySetInnerHTML={{ __html: assessmentHtml }}
+          />
         </div>
       )}
 
@@ -225,7 +234,10 @@ export default function ReportPage() {
             </div>
             <h2 className="section-title">评估结论</h2>
           </div>
-          <p className="text-sm text-slate-700 leading-relaxed bg-emerald-50/30 rounded-xl p-4 border border-emerald-100/60">{report.conclusion}</p>
+          <div
+            className="text-sm text-slate-700 leading-relaxed bg-emerald-50/30 rounded-xl p-4 border border-emerald-100/60 prose prose-sm prose-slate max-w-none prose-headings:text-slate-800 prose-headings:font-semibold prose-p:text-slate-700 prose-strong:text-slate-800 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5"
+            dangerouslySetInnerHTML={{ __html: conclusionHtml }}
+          />
         </div>
       )}
 
