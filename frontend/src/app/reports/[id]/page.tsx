@@ -1,7 +1,6 @@
 "use client";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { marked } from "marked";
 import { getReport, addReviewComment, Report } from "@/lib/api";
 
 
