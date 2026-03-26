@@ -55,6 +55,10 @@ pnpm-debug.log*
 .env.test.local
 .env.production.local
 
+# Claude
+.claude/settings.local.json
+.claude/settings.json
+
 # IDE
 .vscode/
 .idea/
