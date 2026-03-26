@@ -29,6 +29,9 @@ class WebSearchSkill(BaseSkill):
         return SkillResult(success=True, data={"results": results, "query": query})
 
     async def search(self, query: str, limit: int = 5) -> list[dict]:
+        from app.config import settings
+        if not settings.web_search_api_key:
+            return []
         # TODO: Connect to real search API (SerpAPI / Bing Search API)
         # Results must be filtered to allowed domains only
         return []

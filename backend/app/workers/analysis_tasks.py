@@ -62,24 +62,31 @@ def run_analysis(self, task_id: str):
                 await db.commit()
                 from app.services.innovation_service import InnovationService
                 innov_result = await InnovationService().evaluate(
-                    db, task_id, essence, candidates
+                    db, task_id, text, essence, candidates
                 )
 
                 # Step 6: Generate report
                 task.current_step = "generating_report"
                 await db.commit()
                 from app.services.report_service import ReportService
-                await ReportService().generate(db, task_id, essence, sim_result, innov_result)
+                await ReportService().generate(db, task_id, text, essence, sim_result, innov_result)
 
                 task.status = TaskStatus.COMPLETED
                 task.current_step = None
                 await db.commit()
 
             except Exception as e:
-                task.status = TaskStatus.FAILED
-                task.error_message = str(e)[:500]
-                task.current_step = None
-                await db.commit()
+                await db.rollback()
+                # rollback 后 session 中的对象已过期，需重新加载
+                result = await db.execute(
+                    select(AnalysisTask).where(AnalysisTask.id == task_id)
+                )
+                task = result.scalar_one_or_none()
+                if task:
+                    task.status = TaskStatus.FAILED
+                    task.error_message = str(e)[:500]
+                    task.current_step = None
+                    await db.commit()
                 raise self.retry(exc=e, countdown=30)
 
     run_async(_run())
