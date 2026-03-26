@@ -5,17 +5,24 @@ from app.models.report import Report
 from sqlalchemy.ext.asyncio import AsyncSession
 
 REPORT_PROMPT = """
-请根据以下分析结果，生成一份专业审核报告摘要（中文，500字以内），包含：
-1. 项目核心技术摘要（2-3句）
-2. 主要相似风险（若有）
-3. 创新性评估结论
-4. 建议处置意见（通过/待复核/不建议通过）
+你是一位资深科技竞赛评审专家。请基于参赛材料全文和已完成的分析结果，撰写一份专业的审核报告摘要。
 
-方案实质：{essence}
+要求：
+- 800字以内，语言专业、客观
+- 需具体引用材料原文中的内容作为论据，不要泛泛而谈
+- 包含：项目核心内容概述、创新性评价、相似风险分析、综合建议
 
-相似度分析（Top候选）：{similarity}
+===== 参赛材料全文 =====
+{full_text}
 
-创新性评估：{innovation}
+===== 结构化摘要 =====
+{essence}
+
+===== 相似度分析结果 =====
+{similarity}
+
+===== 创新性评估结果 =====
+{innovation}
 """
 
 
@@ -27,20 +34,22 @@ class ReportService:
         self,
         db: AsyncSession,
         task_id: str,
+        full_text: str,
         essence: dict,
         sim_result: dict,
         innov_result: dict,
     ) -> Report:
         prompt = REPORT_PROMPT.format(
-            essence=json.dumps(essence, ensure_ascii=False)[:1000],
-            similarity=json.dumps(sim_result, ensure_ascii=False)[:2000],
-            innovation=json.dumps(innov_result, ensure_ascii=False)[:1000],
+            full_text=full_text,
+            essence=json.dumps(essence, ensure_ascii=False),
+            similarity=json.dumps(sim_result, ensure_ascii=False),
+            innovation=json.dumps(innov_result, ensure_ascii=False),
         )
         summary = self.llm.chat(
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=1024,
+            max_tokens=2048,
         )
-        conclusion = innov_result.get("explanation", "")
+        conclusion = innov_result.get("verdict", "")
 
         report = Report(
             task_id=task_id,

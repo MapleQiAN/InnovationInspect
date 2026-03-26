@@ -66,10 +66,21 @@ class DocParseService:
         """Parse all documents for a task and return combined text."""
         from sqlalchemy import select
         from app.models.document import Document
+        from app.services.file_service import FileService
+
+        file_service = FileService()
         result = await db.execute(select(Document).where(Document.task_id == task_id))
         documents = result.scalars().all()
         texts = []
         for doc in documents:
             if doc.extracted_text:
                 texts.append(doc.extracted_text)
+            elif doc.storage_key:
+                # Download from MinIO and parse
+                content = await file_service.download_file(doc.storage_key)
+                extracted = self.parse(content, doc.file_type)
+                doc.extracted_text = extracted
+                texts.append(extracted)
+        # Persist extracted text so future calls don't re-parse
+        await db.commit()
         return "\n\n".join(texts)

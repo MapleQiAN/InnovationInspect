@@ -4,14 +4,14 @@ from app.config import settings
 
 SIMILARITY_PROMPT = """
 请对以下"待评估方案"和"候选方案"进行五维相似度分析，返回 JSON（仅返回 JSON，不要其他内容）：
-{
+{{
   "problem_similarity": 0.0,
   "method_similarity": 0.0,
   "architecture_similarity": 0.0,
   "flow_similarity": 0.0,
   "evidence_alignment": 0.0,
   "explanation": "解释说明"
-}
+}}
 
 评分说明：
 - 1.0 = 完全相同，0.0 = 完全无关

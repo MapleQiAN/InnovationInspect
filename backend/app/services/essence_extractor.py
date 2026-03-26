@@ -1,7 +1,10 @@
 import json
+import uuid
 from app.llm.client import LLMClient, get_llm_client
 from app.config import settings
 from app.models.essence import ProposalEssence
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 EXTRACTION_PROMPT = """
@@ -44,7 +47,7 @@ class EssenceExtractor:
 
     async def _call_llm(self, text: str) -> dict:
         content = self.llm.chat(
-            messages=[{"role": "user", "content": EXTRACTION_PROMPT + text[:8000]}],
+            messages=[{"role": "user", "content": EXTRACTION_PROMPT + text}],
             max_tokens=settings.llm_max_tokens,
         )
         start = content.find("{")
@@ -58,14 +61,18 @@ class EssenceExtractor:
 
     async def extract(self, db: AsyncSession, task_id: str, text: str) -> dict:
         essence_data = await self.extract_from_text(text)
-        essence = ProposalEssence(
-            task_id=task_id,
-            problem=essence_data.get("problem", {}),
-            method=essence_data.get("method", {}),
-            architecture=essence_data.get("architecture", {}),
-            innovation=essence_data.get("innovation", {}),
-            evidence=essence_data.get("evidence", {}),
+        fields = {
+            "problem": essence_data.get("problem", {}),
+            "method": essence_data.get("method", {}),
+            "architecture": essence_data.get("architecture", {}),
+            "innovation": essence_data.get("innovation", {}),
+            "evidence": essence_data.get("evidence", {}),
+        }
+        stmt = (
+            pg_insert(ProposalEssence)
+            .values(id=str(uuid.uuid4()), task_id=task_id, **fields)
+            .on_conflict_do_update(index_elements=["task_id"], set_=fields)
         )
-        db.add(essence)
+        await db.execute(stmt)
         await db.commit()
         return essence_data
