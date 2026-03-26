@@ -31,5 +31,8 @@ class Settings(BaseSettings):
     azure_api_base: str = ""
     azure_api_version: str = "2024-02-01"
 
+    # Web 搜索 API（可选，不配置则跳过互联网搜索）
+    web_search_api_key: str = ""  # SerpAPI 或 Bing Search API key
+
 
 settings = Settings()
