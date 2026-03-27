@@ -30,6 +30,9 @@ export default function RootLayout({
             <a href="/" className="px-3.5 py-1.5 rounded-md text-slate-500 hover:text-indigo-600 hover:bg-white hover:shadow-sm font-medium transition-all duration-200">
               首页
             </a>
+            <a href="/history" className="px-3.5 py-1.5 rounded-md text-slate-500 hover:text-indigo-600 hover:bg-white hover:shadow-sm font-medium transition-all duration-200">
+              已处理项目
+            </a>
             <a href="/skills" className="px-3.5 py-1.5 rounded-md text-slate-500 hover:text-indigo-600 hover:bg-white hover:shadow-sm font-medium transition-all duration-200">
               OpenClaw Skills
             </a>

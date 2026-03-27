@@ -28,6 +28,12 @@ export interface TaskResults {
   report_id?: string;
 }
 
+export interface WebReference {
+  title: string;
+  url: string;
+  relevance?: string;
+}
+
 export interface Report {
   id: string;
   task_id: string;
@@ -36,6 +42,7 @@ export interface Report {
   innovation_result: Record<string, unknown>;
   conclusion?: string;
   reviewer_comment?: string;
+  web_search_results?: WebReference[];
 }
 
 export const submitTask = async (files: File[]): Promise<TaskStatus> => {
@@ -52,6 +59,20 @@ export const getTaskStatus = async (taskId: string): Promise<TaskStatus> => {
 
 export const getTaskResults = async (taskId: string): Promise<TaskResults> => {
   const res = await api.get<TaskResults>(`/tasks/${taskId}/results`);
+  return res.data;
+};
+
+export interface ReportListItem {
+  id: string;
+  task_id: string;
+  summary: string | null;
+  overall_score: number | null;
+  reviewer_comment: string | null;
+  created_at: string;
+}
+
+export const listReports = async (): Promise<ReportListItem[]> => {
+  const res = await api.get<ReportListItem[]>("/reports/");
   return res.data;
 };
 

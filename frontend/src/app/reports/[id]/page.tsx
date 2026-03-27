@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { marked } from "marked";
 import { getReport, addReviewComment, Report } from "@/lib/api";
 
 
@@ -61,13 +62,7 @@ export default function ReportPage() {
 
   const overallScore = report.innovation_result?.overall_innovation_score as number | undefined;
   const riskFlags = report.innovation_result?.risk_flags as string[] | undefined;
-
-  const summaryHtml = useMemo(() => report.summary ? marked.parse(report.summary, { async: false }) as string : "", [report.summary]);
-  const assessmentHtml = useMemo(() => {
-    const text = report.innovation_result?.assessment as string | undefined;
-    return text ? marked.parse(text, { async: false }) as string : "";
-  }, [report.innovation_result?.assessment]);
-  const conclusionHtml = useMemo(() => report.conclusion ? marked.parse(report.conclusion, { async: false }) as string : "", [report.conclusion]);
+  const webRefs = (report.innovation_result?.web_references ?? report.web_search_results ?? []) as Array<{title: string; url?: string; relevance?: string}>;
 
   return (
     <main className="max-w-3xl mx-auto px-6 py-10 space-y-6">
@@ -125,13 +120,13 @@ export default function ReportPage() {
           </div>
           <div
             className="text-sm text-slate-700 leading-relaxed bg-slate-50/50 rounded-xl p-4 border border-slate-100/80 prose prose-sm prose-slate max-w-none prose-headings:text-slate-800 prose-headings:font-semibold prose-p:text-slate-700 prose-strong:text-slate-800 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5"
-            dangerouslySetInnerHTML={{ __html: summaryHtml }}
+            dangerouslySetInnerHTML={{ __html: report.summary ? marked.parse(report.summary, { async: false }) as string : "" }}
           />
         </div>
       )}
 
       {/* Innovation Assessment */}
-      {report.innovation_result?.assessment && (
+      {typeof report.innovation_result?.assessment === "string" && (
         <div className="glass-card p-7 animate-fade-in-up" style={{ animationDelay: "0.2s", animationFillMode: "both" }}>
           <div className="flex items-center gap-3 mb-5">
             <div className="section-icon bg-gradient-to-br from-violet-100 to-purple-100 border border-violet-200/50">
@@ -146,13 +141,54 @@ export default function ReportPage() {
           </div>
           <div
             className="text-sm text-slate-700 leading-relaxed bg-violet-50/30 rounded-xl p-4 border border-violet-100/60 prose prose-sm prose-slate max-w-none prose-headings:text-slate-800 prose-headings:font-semibold prose-p:text-slate-700 prose-strong:text-slate-800 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5"
-            dangerouslySetInnerHTML={{ __html: assessmentHtml }}
+            dangerouslySetInnerHTML={{ __html: typeof report.innovation_result?.assessment === "string" ? marked.parse(report.innovation_result.assessment, { async: false }) as string : "" }}
           />
         </div>
       )}
 
+      {/* Web Search References */}
+      {webRefs.length > 0 && (
+        <div className="glass-card p-7 animate-fade-in-up" style={{ animationDelay: "0.22s", animationFillMode: "both" }}>
+          <div className="flex items-center gap-3 mb-5">
+            <div className="section-icon bg-gradient-to-br from-cyan-100 to-sky-100 border border-cyan-200/50">
+              <svg className="w-4.5 h-4.5 text-cyan-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="section-title">网络检索对比</h2>
+              <p className="text-xs text-slate-400 mt-0.5">基于联网搜索发现的相似选题与项目</p>
+            </div>
+          </div>
+          <div className="space-y-2.5">
+            {webRefs.map((ref, i) => (
+              <div key={i} className="flex items-start gap-3 px-4 py-3 bg-cyan-50/30 rounded-xl border border-cyan-100/60 hover:bg-cyan-50/50 transition-colors">
+                <span className="w-6 h-6 rounded-lg bg-cyan-100 text-cyan-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
+                <div className="min-w-0 flex-1">
+                  {ref.url ? (
+                    <a href={ref.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-cyan-700 hover:text-cyan-900 hover:underline break-all">
+                      {ref.title || ref.url}
+                    </a>
+                  ) : (
+                    <p className="text-sm font-medium text-slate-700">{ref.title}</p>
+                  )}
+                  {ref.relevance && (
+                    <p className="text-xs text-slate-500 mt-1">{ref.relevance}</p>
+                  )}
+                </div>
+                {ref.url && (
+                  <svg className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                  </svg>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Strengths & Weaknesses */}
-      {((report.innovation_result?.strengths as string[] | undefined)?.length ?? 0) > 0 && (
+      {Array.isArray(report.innovation_result?.strengths) && report.innovation_result.strengths.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in-up" style={{ animationDelay: "0.25s", animationFillMode: "both" }}>
           {/* Strengths */}
           <div className="glass-card p-6">
@@ -175,7 +211,7 @@ export default function ReportPage() {
           </div>
 
           {/* Weaknesses */}
-          {((report.innovation_result?.weaknesses as string[] | undefined)?.length ?? 0) > 0 && (
+          {Array.isArray(report.innovation_result?.weaknesses) && report.innovation_result.weaknesses.length > 0 && (
             <div className="glass-card p-6">
               <div className="flex items-center gap-2.5 mb-4">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 border border-amber-200/50 flex items-center justify-center">
@@ -235,7 +271,7 @@ export default function ReportPage() {
           </div>
           <div
             className="text-sm text-slate-700 leading-relaxed bg-emerald-50/30 rounded-xl p-4 border border-emerald-100/60 prose prose-sm prose-slate max-w-none prose-headings:text-slate-800 prose-headings:font-semibold prose-p:text-slate-700 prose-strong:text-slate-800 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5"
-            dangerouslySetInnerHTML={{ __html: conclusionHtml }}
+            dangerouslySetInnerHTML={{ __html: report.conclusion ? marked.parse(report.conclusion, { async: false }) as string : "" }}
           />
         </div>
       )}
