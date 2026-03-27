@@ -16,4 +16,5 @@ class Report(Base):
     innovation_result: Mapped[dict] = mapped_column(JSONB, default=dict)
     conclusion: Mapped[str | None] = mapped_column(Text, nullable=True)
     reviewer_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    web_search_results: Mapped[list] = mapped_column(JSONB, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

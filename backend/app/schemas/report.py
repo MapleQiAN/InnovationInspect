@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel
 
 
@@ -13,3 +14,13 @@ class ReportResponse(BaseModel):
     innovation_result: dict = {}
     conclusion: str | None = None
     reviewer_comment: str | None = None
+    web_search_results: list[dict] = []
+
+
+class ReportListItem(BaseModel):
+    id: str
+    task_id: str
+    summary: str | None = None
+    overall_score: float | None = None
+    reviewer_comment: str | None = None
+    created_at: datetime
