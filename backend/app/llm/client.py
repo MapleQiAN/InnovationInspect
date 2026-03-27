@@ -1,6 +1,9 @@
 import os
+import logging
 import litellm
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class LLMClient:
@@ -55,6 +58,61 @@ class LLMClient:
             max_tokens=max_tokens,
         )
         return response.choices[0].message.content
+
+    def chat_with_search(
+        self,
+        messages: list[dict],
+        max_tokens: int,
+        search_options: dict | None = None,
+    ) -> str:
+        """发送消息并启用联网搜索，返回文本响应。
+
+        直接通过 httpx 调用 DashScope OpenAI 兼容端点，
+        将 enable_search 放在请求体顶层（DashScope 官方要求）。
+        不支持时自动降级到普通 chat。
+        """
+        import httpx
+
+        if not messages:
+            raise ValueError("messages cannot be empty")
+
+        api_key = os.environ.get("OPENAI_API_KEY", "")
+        if not api_key:
+            return self.chat(messages, max_tokens)
+
+        # DashScope 联网搜索使用标准兼容端点，而非用户配置的 v2 Apps 端点
+        search_base = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        model_name = self.model.split("/", 1)[1] if "/" in self.model else self.model
+        opts = search_options or {"forced_search": True, "search_strategy": "max"}
+
+        payload = {
+            "model": model_name,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "enable_search": True,          # 顶层参数，非 extra_body
+            "search_options": opts,
+        }
+
+        try:
+            resp = httpx.post(
+                f"{search_base}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+                timeout=120.0,
+            )
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"]
+        except Exception as e:
+            logger.error(
+                "Web search call failed for model %s: %s. Falling back to regular chat.",
+                model_name,
+                e,
+                exc_info=True,
+            )
+            return self.chat(messages, max_tokens)
 
 
 def get_llm_client() -> LLMClient:
