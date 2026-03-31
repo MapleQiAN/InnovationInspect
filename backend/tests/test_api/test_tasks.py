@@ -20,7 +20,7 @@ async def test_create_task_returns_task_id(client):
     mock_db = AsyncMock()
     mock_db.flush = AsyncMock()
     mock_db.commit = AsyncMock()
-    mock_db.add = AsyncMock()
+    mock_db.add = MagicMock()
 
     async def override_get_db():
         yield mock_db
