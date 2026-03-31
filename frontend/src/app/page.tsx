@@ -1,4 +1,4 @@
-import { UploadForm } from "@/components/upload/UploadForm";
+import { TaskCenter } from "@/components/tasks/TaskCenter";
 
 export default function HomePage() {
   return (
@@ -9,7 +9,7 @@ export default function HomePage() {
       <div className="absolute bottom-20 right-10 w-96 h-96 bg-violet-200/20 rounded-full blur-3xl animate-float-delayed pointer-events-none" />
       <div className="absolute top-40 right-20 w-64 h-64 bg-blue-200/15 rounded-full blur-3xl animate-float-slow pointer-events-none" />
 
-      <div className="w-full max-w-2xl relative z-10">
+      <div className="w-full max-w-5xl relative z-10">
         <div className="text-center mb-12 animate-fade-in-up">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-50/80 text-indigo-600 text-xs font-semibold mb-6 border border-indigo-100/80 backdrop-blur-sm shadow-sm">
             <span className="relative flex h-2 w-2">
@@ -29,7 +29,7 @@ export default function HomePage() {
         </div>
 
         <div className="animate-fade-in-up" style={{ animationDelay: "0.15s", animationFillMode: "both" }}>
-          <UploadForm />
+          <TaskCenter />
         </div>
 
         {/* Feature highlights */}

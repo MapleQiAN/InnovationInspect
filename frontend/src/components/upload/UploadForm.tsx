@@ -1,7 +1,6 @@
 "use client";
 import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { submitTask } from "@/lib/api";
+import { submitTask, TaskStatus } from "@/lib/api";
 
 const ACCEPTED_TYPES = ".pdf,.docx,.pptx,.jpg,.jpeg,.png,.zip";
 
@@ -15,8 +14,11 @@ const FILE_ICONS: Record<string, string> = {
   png: "text-emerald-500",
 };
 
-export function UploadForm() {
-  const router = useRouter();
+type UploadFormProps = {
+  onTaskCreated?: (task: TaskStatus) => void | Promise<void>;
+};
+
+export function UploadForm({ onTaskCreated }: UploadFormProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,8 @@ export function UploadForm() {
     setError(null);
     try {
       const task = await submitTask(files);
-      router.push(`/tasks/${task.task_id}`);
+      setFiles([]);
+      await onTaskCreated?.(task);
     } catch {
       setError("提交失败，请检查文件格式后重试");
     } finally {

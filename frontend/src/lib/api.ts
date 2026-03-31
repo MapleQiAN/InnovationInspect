@@ -11,6 +11,18 @@ export interface TaskStatus {
   error_message?: string;
 }
 
+export interface TaskListItem {
+  task_id: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  current_step?: string;
+  error_message?: string;
+  created_at: string;
+  updated_at: string;
+  document_count: number;
+  primary_filename?: string | null;
+  report_id?: string | null;
+}
+
 export interface TaskResults {
   task_id: string;
   status: string;
@@ -54,6 +66,11 @@ export const submitTask = async (files: File[]): Promise<TaskStatus> => {
 
 export const getTaskStatus = async (taskId: string): Promise<TaskStatus> => {
   const res = await api.get<TaskStatus>(`/tasks/${taskId}`);
+  return res.data;
+};
+
+export const listTasks = async (): Promise<TaskListItem[]> => {
+  const res = await api.get<TaskListItem[]>("/tasks/");
   return res.data;
 };
 
