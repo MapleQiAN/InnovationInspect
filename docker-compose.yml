@@ -58,7 +58,7 @@ services:
       - redis
     volumes:
       - ./backend:/app
-    command: celery -A app.workers.celery_app worker --loglevel=info
+    command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=${CELERY_WORKER_CONCURRENCY:-2}
 
   frontend:
     build: ./frontend

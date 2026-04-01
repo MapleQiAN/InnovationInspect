@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     minio_bucket: str = "ccreview"
     qdrant_url: str = "http://localhost:6333"
     collection_name: str = "proposals"
+    celery_worker_concurrency: int = 2
 
     # LLM 提供商配置
     # llm_model 使用 litellm 格式: "anthropic/claude-sonnet-4-6",

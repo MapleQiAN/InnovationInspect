@@ -1,14 +1,62 @@
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from app.database import get_db
 from app.models.task import AnalysisTask, TaskStatus
 from app.models.document import Document
-from app.schemas.task import TaskCreateResponse, TaskStatusResponse
+from app.models.report import Report
+from app.schemas.task import TaskCreateResponse, TaskStatusResponse, TaskListItem
 from app.services.file_service import FileService
 
 router = APIRouter()
 file_service = FileService()
+
+
+@router.get("/", response_model=list[TaskListItem])
+async def list_tasks(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(
+            AnalysisTask.id.label("task_id"),
+            AnalysisTask.status,
+            AnalysisTask.current_step,
+            AnalysisTask.created_at,
+            AnalysisTask.updated_at,
+            AnalysisTask.error_message,
+            func.count(Document.id).label("document_count"),
+            func.min(Document.filename).label("primary_filename"),
+            Report.id.label("report_id"),
+        )
+        .outerjoin(Document, Document.task_id == AnalysisTask.id)
+        .outerjoin(Report, Report.task_id == AnalysisTask.id)
+        .group_by(
+            AnalysisTask.id,
+            AnalysisTask.status,
+            AnalysisTask.current_step,
+            AnalysisTask.created_at,
+            AnalysisTask.updated_at,
+            AnalysisTask.error_message,
+            Report.id,
+        )
+        .order_by(AnalysisTask.created_at.desc())
+    )
+
+    items: list[TaskListItem] = []
+    for row in result.all():
+        mapping = row._mapping if hasattr(row, "_mapping") else None
+        items.append(
+            TaskListItem(
+                task_id=(mapping["task_id"] if mapping else row[0]),
+                status=(mapping["status"] if mapping else row[1]),
+                current_step=(mapping["current_step"] if mapping else row[2]),
+                created_at=(mapping["created_at"] if mapping else row[3]),
+                updated_at=(mapping["updated_at"] if mapping else row[4]),
+                error_message=(mapping["error_message"] if mapping else row[5]),
+                document_count=(mapping["document_count"] if mapping else row[6]),
+                primary_filename=(mapping["primary_filename"] if mapping else row[7]),
+                report_id=(mapping["report_id"] if mapping else row[8]),
+            )
+        )
+    return items
 
 
 @router.post("/", response_model=TaskCreateResponse, status_code=201)

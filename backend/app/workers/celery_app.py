@@ -12,4 +12,5 @@ celery_app.conf.update(
     result_serializer="json",
     accept_content=["json"],
     timezone="Asia/Shanghai",
+    worker_concurrency=settings.celery_worker_concurrency,
 )

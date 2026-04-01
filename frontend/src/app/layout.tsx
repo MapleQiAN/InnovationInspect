@@ -28,7 +28,7 @@ export default function RootLayout({
           </a>
           <div className="flex items-center gap-0.5 bg-slate-100/60 rounded-lg p-0.5">
             <a href="/" className="px-3.5 py-1.5 rounded-md text-slate-500 hover:text-indigo-600 hover:bg-white hover:shadow-sm font-medium transition-all duration-200">
-              首页
+              任务中心
             </a>
             <a href="/history" className="px-3.5 py-1.5 rounded-md text-slate-500 hover:text-indigo-600 hover:bg-white hover:shadow-sm font-medium transition-all duration-200">
               已处理项目
